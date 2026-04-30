@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ChessTutor
-{
+{ 
     internal static class Program
     {
         /// <summary>
