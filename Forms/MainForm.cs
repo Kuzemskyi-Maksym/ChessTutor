@@ -50,23 +50,18 @@ namespace ChessTutor.Forms
 
         // ── Зображення фігур ─────────────────────────────────────────────────────
 
-        // Словник: (PieceType, PieceColor) -> Image
-        // Фігури малюються через GDI+ Unicode-символи (не потребує зовнішніх ресурсів)
-        private static readonly Dictionary<(PieceType, PieceColor), string> _pieceSymbols
-            = new Dictionary<(PieceType, PieceColor), string>
+        // Словник Unicode-символів. Використовуємо ЗАЛИТІ варіанти для всіх фігур,
+        // а кольори (фарбу і обведення) задаємо окремо в DrawPiece — це дає
+        // чіткий силует без потреби в круглому фоні.
+        private static readonly Dictionary<PieceType, string> _pieceSymbol
+            = new Dictionary<PieceType, string>
         {
-            { (PieceType.King,   PieceColor.White), "♔" },
-            { (PieceType.Queen,  PieceColor.White), "♕" },
-            { (PieceType.Rook,   PieceColor.White), "♖" },
-            { (PieceType.Bishop, PieceColor.White), "♗" },
-            { (PieceType.Knight, PieceColor.White), "♘" },
-            { (PieceType.Pawn,   PieceColor.White), "♙" },
-            { (PieceType.King,   PieceColor.Black), "♚" },
-            { (PieceType.Queen,  PieceColor.Black), "♛" },
-            { (PieceType.Rook,   PieceColor.Black), "♜" },
-            { (PieceType.Bishop, PieceColor.Black), "♝" },
-            { (PieceType.Knight, PieceColor.Black), "♞" },
-            { (PieceType.Pawn,   PieceColor.Black), "♟" },
+            { PieceType.King,   "♚" },  // ♚
+            { PieceType.Queen,  "♛" },  // ♛
+            { PieceType.Rook,   "♜" },  // ♜
+            { PieceType.Bishop, "♝" },  // ♝
+            { PieceType.Knight, "♞" },  // ♞
+            { PieceType.Pawn,   "♟" },  // ♟
         };
 
         // ── Конструктор ──────────────────────────────────────────────────────────
@@ -143,11 +138,12 @@ namespace ChessTutor.Forms
             MainMenuStrip = _menu;
 
             // ── Дошка ────────────────────────────────────────────────────────────
-            _boardPanel = new Panel
+            // Використовуємо панель з подвійним буферуванням — щоб не блимало при перерисовці
+            _boardPanel = new DoubleBufferedPanel
             {
                 Location = new Point(BoardOffset, _menu.Height + BoardOffset),
                 Size = new Size(BoardSize + BoardOffset, BoardSize + BoardOffset),
-                BackColor = Color.Transparent
+                BackColor = Color.FromArgb(40, 40, 40)
             };
             _boardPanel.Paint += OnBoardPaint;
             _boardPanel.MouseClick += OnBoardClick;
@@ -341,31 +337,40 @@ namespace ChessTutor.Forms
             }
         }
 
-        /// <summary>Малює фігуру у клітині через Unicode-символ.</summary>
+        /// <summary>
+        /// Малює фігуру у клітині через Unicode-символ із заливкою та обведенням
+        /// (без жодного фонового кола).
+        /// </summary>
         private void DrawPiece(Graphics g, Piece piece, int px, int py)
         {
-            string symbol = _pieceSymbols[(piece.Type, piece.Color)];
-            int margin = 4;
-            var bgRect = new RectangleF(px + margin, py + margin, CellSize - margin * 2, CellSize - margin * 2);
+            string symbol = _pieceSymbol[piece.Type];
 
-            // Фон фігури — коло для розрізнення білих і чорних
-            if (piece.Color == PieceColor.White)
-                g.FillEllipse(new SolidBrush(Color.FromArgb(220, 255, 255, 255)), bgRect);
-            else
-                g.FillEllipse(new SolidBrush(Color.FromArgb(200, 30, 30, 30)), bgRect);
+            // Кольори фарби та обведення залежать від кольору фігури
+            Color fillColor = piece.Color == PieceColor.White
+                ? Color.FromArgb(248, 248, 248)
+                : Color.FromArgb(25, 25, 25);
+            Color outlineColor = piece.Color == PieceColor.White
+                ? Color.FromArgb(20, 20, 20)
+                : Color.FromArgb(245, 245, 245);
 
-            using (var font = new Font("Segoe UI Symbol", CellSize * 0.60f, FontStyle.Regular, GraphicsUnit.Pixel))
+            float emSize = CellSize * 0.62f;
+            using (var fam = new FontFamily("Segoe UI Symbol"))
+            using (var path = new GraphicsPath())
             {
-                SizeF size = g.MeasureString(symbol, font);
-                float x = px + (CellSize - size.Width) / 2f;
-                float y = py + (CellSize - size.Height) / 2f;
+                // Будуємо контур символу
+                using (var sf = new StringFormat(StringFormat.GenericTypographic))
+                {
+                    sf.Alignment = StringAlignment.Center;
+                    sf.LineAlignment = StringAlignment.Center;
+                    var rect = new RectangleF(px, py, CellSize, CellSize);
+                    path.AddString(symbol, fam, (int)FontStyle.Regular, emSize, rect, sf);
+                }
 
-                // Символ чорного кольору для білих фігур, білого — для чорних
-                Brush brush = piece.Color == PieceColor.White
-                    ? new SolidBrush(Color.FromArgb(20, 20, 20))
-                    : new SolidBrush(Color.FromArgb(240, 240, 240));
-
-                g.DrawString(symbol, font, brush, x, y);
+                // Спершу малюємо обведення, потім заливку — щоб контур був за фігурою
+                using (var pen = new Pen(outlineColor, 3.2f) { LineJoin = LineJoin.Round })
+                    g.DrawPath(pen, path);
+                using (var brush = new SolidBrush(fillColor))
+                    g.FillPath(brush, path);
             }
         }
 
@@ -647,6 +652,23 @@ namespace ChessTutor.Forms
             Name = "MainForm";
             ResumeLayout(false);
             PerformLayout();
+        }
+
+        // ── Панель з подвійним буферуванням ─────────────────────────────────────
+        // Звичайна Panel у WinForms не вмикає подвійне буферування,
+        // тому при перерисовці (вибір клітини, підсвічування) видно блимання.
+        // Цей нащадок вмикає всі потрібні стилі.
+        private sealed class DoubleBufferedPanel : Panel
+        {
+            public DoubleBufferedPanel()
+            {
+                SetStyle(ControlStyles.AllPaintingInWmPaint
+                       | ControlStyles.OptimizedDoubleBuffer
+                       | ControlStyles.UserPaint
+                       | ControlStyles.ResizeRedraw, true);
+                DoubleBuffered = true;
+                UpdateStyles();
+            }
         }
     }
 }
