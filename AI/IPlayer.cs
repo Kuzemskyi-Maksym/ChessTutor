@@ -5,7 +5,9 @@ using ChessTutor.Models;
 
 namespace ChessTutor.AI
 {
-
+    // ═══════════════════════════════════════════════════════════════════
+    //  INTERFACE IPlayer
+    // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Інтерфейс гравця. Демонструє поліморфізм:
@@ -20,4 +22,5 @@ namespace ChessTutor.AI
         /// </summary>
         Move GetMove(Board board, MoveValidator validator);
     }
+
 }

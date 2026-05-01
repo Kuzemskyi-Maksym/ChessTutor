@@ -26,6 +26,9 @@
         /// <summary>Збереження HasMoved тури перед рокіровкою.</summary>
         public bool PrevRookHasMoved { get; set; }
 
+        /// <summary>Збереження EnPassantTarget перед ходом для коректного UndoMove.</summary>
+        public Position? PrevEnPassantTarget { get; set; }
+
         public Move(Piece piece, Position from, Position to)
         {
             MovingPiece = piece;

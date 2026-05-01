@@ -11,6 +11,7 @@ namespace ChessTutor.Logic
     /// </summary>
     public class MoveValidator
     {
+        // ── Публічний API ────────────────────────────────────────────────────────
 
         /// <summary>
         /// Повертає список усіх легальних ходів для фігури на позиції <paramref name="from"/>.
@@ -66,6 +67,7 @@ namespace ChessTutor.Logic
         public bool IsStalemate(PieceColor color, Board board) =>
             !IsInCheck(color, board) && GetAllLegalMoves(color, board).Count == 0;
 
+        // ── Внутрішня логіка ─────────────────────────────────────────────────────
 
         /// <summary>
         /// Перевіряє, чи залишив би хід власного короля під шахом.
@@ -73,8 +75,7 @@ namespace ChessTutor.Logic
         /// </summary>
         private bool WouldLeaveKingInCheck(Move move, Board board, PieceColor color)
         {
-            Position? prevEP = board.EnPassantTarget;
-            board.ApplyMove(move);
+            board.ApplyMove(move, out Position? prevEP);
             bool inCheck = IsInCheck(color, board);
             board.UndoMove(move, prevEP);
             return inCheck;
@@ -98,11 +99,12 @@ namespace ChessTutor.Logic
             return false;
         }
 
+        // ── Рокіровка ────────────────────────────────────────────────────────────
 
         private List<Move> GetCastlingMoves(Position from, Board board, Piece piece)
         {
             var moves = new List<Move>();
-            if (!(piece is Models.Pieces.King) || piece.HasMoved) return moves;
+            if (piece.Type != PieceType.King || piece.HasMoved) return moves;
             if (IsInCheck(piece.Color, board)) return moves;
 
             int row = from.Row;
@@ -132,20 +134,16 @@ namespace ChessTutor.Logic
                                 PieceColor color, MoveType type)
         {
             Piece rook = board.GetPiece(new Position(row, rookCol));
-            if (rook == null || rook.HasMoved) return false;
+            if (rook == null || rook.Type != PieceType.Rook || rook.HasMoved) return false;
 
-            // Перевіряємо що клітини між фігурами порожні
-            int minCol = System.Math.Min(passCol1, passCol2);
-            int maxCol = System.Math.Max(passCol1, passCol2);
-
-            // Для довгої рокіровки є ще одна порожня клітина між турою та ферзем
-            int checkFrom = type == MoveType.CastlingQueenside ? 1 : 5;
-            int checkTo = type == MoveType.CastlingQueenside ? 3 : 6;
-
-            for (int c = checkFrom; c <= checkTo; c++)
+            // Перевіряємо що всі клітини між королем і турою порожні
+            int kingCol = 4;
+            int minCol = System.Math.Min(kingCol, rookCol) + 1;
+            int maxCol = System.Math.Max(kingCol, rookCol) - 1;
+            for (int c = minCol; c <= maxCol; c++)
                 if (board.GetPiece(new Position(row, c)) != null) return false;
 
-            // Клітини проходу не повинні бути під атакою
+            // Клітини через які проходить король не повинні бути під атакою
             PieceColor opp = Opponent(color);
             if (IsSquareAttackedBy(new Position(row, passCol1), opp, board)) return false;
             if (IsSquareAttackedBy(new Position(row, passCol2), opp, board)) return false;

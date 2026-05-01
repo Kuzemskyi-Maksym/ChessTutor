@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 namespace ChessTutor.AI
 {
 
-
     /// <summary>
     /// Комп'ютерний опонент.
     /// Реалізує алгоритм мінімаксу з відсіканням альфа-бета (глибина за замовчуванням 3).
@@ -35,6 +34,7 @@ namespace ChessTutor.AI
             _validator = new MoveValidator();
         }
 
+        // ── Головний метод ────────────────────────────────────────────────────
 
         /// <summary>
         /// Вибирає найкращий хід за допомогою мінімаксу з альфа-бета відсіканням.
@@ -54,8 +54,7 @@ namespace ChessTutor.AI
 
             foreach (var move in moves)
             {
-                Position? prevEP = board.EnPassantTarget;
-                board.ApplyMove(move);
+                board.ApplyMove(move, out Position? prevEP);
 
                 int score = -Minimax(board, Depth - 1, -beta, -alpha, Opponent(Color));
 
@@ -72,6 +71,7 @@ namespace ChessTutor.AI
             return bestMove;
         }
 
+        // ── Мінімакс з альфа-бета відсіканням ───────────────────────────────
 
         /// <summary>
         /// Рекурсивний мінімакс. Повертає оцінку позиції з точки зору <paramref name="color"/>.
@@ -96,8 +96,7 @@ namespace ChessTutor.AI
             int best = int.MinValue;
             foreach (var move in moves)
             {
-                Position? prevEP = board.EnPassantTarget;
-                board.ApplyMove(move);
+                board.ApplyMove(move, out Position? prevEP);
 
                 int score = -Minimax(board, depth - 1, -beta, -alpha, Opponent(color));
 
@@ -112,6 +111,7 @@ namespace ChessTutor.AI
             return best;
         }
 
+        // ── Оцінювальна функція ──────────────────────────────────────────────
 
         /// <summary>
         /// Оцінює позицію з точки зору гравця <paramref name="color"/>.
@@ -161,6 +161,7 @@ namespace ChessTutor.AI
             }
         }
 
+        // ── Допоміжні ────────────────────────────────────────────────────────
 
         private static PieceColor Opponent(PieceColor c) =>
             c == PieceColor.White ? PieceColor.Black : PieceColor.White;

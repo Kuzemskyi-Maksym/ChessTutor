@@ -35,5 +35,5 @@ namespace ChessTutor.Models.Pieces
             return moves;
         }
     }
-    
+
 }

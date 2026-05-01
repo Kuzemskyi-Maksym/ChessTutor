@@ -80,9 +80,12 @@ namespace ChessTutor.Models
         /// Не перевіряє легальність — це завдання MoveValidator.
         /// </summary>
         /// <param name="move">Хід до виконання.</param>
-        public void ApplyMove(Move move)
+        public void ApplyMove(Move move, out Position? prevEnPassant)
         {
             Piece piece = GetPiece(move.From);
+
+            // Зберігаємо поточний EnPassantTarget щоб UndoMove міг відновити
+            prevEnPassant = EnPassantTarget;
             EnPassantTarget = null;
 
             // Зберігаємо попередній стан HasMoved для коректного UndoMove
@@ -90,19 +93,21 @@ namespace ChessTutor.Models
 
             switch (move.Type)
             {
+                // ─── Звичайний хід / взяття ──────────────────────────────────
                 case MoveType.Normal:
                 default:
                     SetPiece(move.To, piece);
                     SetPiece(move.From, null);
 
                     // Пішак рухається на 2 — встановлюємо поле для взяття на проході
-                    if (piece is Pawn && Math.Abs(move.To.Row - move.From.Row) == 2)
+                    if (piece.Type == PieceType.Pawn && Math.Abs(move.To.Row - move.From.Row) == 2)
                     {
                         int epRow = (move.From.Row + move.To.Row) / 2;
                         EnPassantTarget = new Position(epRow, move.From.Col);
                     }
                     break;
 
+                // ─── Рокіровка ───────────────────────────────────────────────
                 case MoveType.CastlingKingside:
                 case MoveType.CastlingQueenside:
                     int rookFromCol = move.Type == MoveType.CastlingKingside ? 7 : 0;
@@ -110,20 +115,30 @@ namespace ChessTutor.Models
                     int row = move.From.Row;
 
                     Piece rook = GetPiece(new Position(row, rookFromCol));
-                    move.PrevRookHasMoved = rook.HasMoved; // зберігаємо стан тури
-                    SetPiece(move.To, piece);
+                    if (rook == null) break; // захист від некоректного стану
+
+                    move.PrevRookHasMoved = rook.HasMoved;
+
+                    // Спочатку прибираємо обидві фігури, потім ставимо на нові місця
                     SetPiece(move.From, null);
-                    SetPiece(new Position(row, rookToCol), rook);
                     SetPiece(new Position(row, rookFromCol), null);
+                    SetPiece(move.To, piece);
+                    SetPiece(new Position(row, rookToCol), rook);
                     rook.HasMoved = true;
                     break;
 
+                // ─── Взяття на проході ───────────────────────────────────────
                 case MoveType.EnPassant:
+                    var epCapture = new Position(move.From.Row, move.To.Col);
+                    // Зберігаємо взятого пішака якщо він ще не записаний
+                    if (move.CapturedPiece == null)
+                        move.CapturedPiece = GetPiece(epCapture);
+                    SetPiece(epCapture, null);
                     SetPiece(move.To, piece);
                     SetPiece(move.From, null);
-                    SetPiece(new Position(move.From.Row, move.To.Col), null);
                     break;
 
+                // ─── Перетворення пішака ─────────────────────────────────────
                 case MoveType.Promotion:
                     SetPiece(move.From, null);
                     SetPiece(move.To, CreatePromotedPiece(move.PromotionPieceType, piece.Color));
@@ -178,6 +193,7 @@ namespace ChessTutor.Models
             move.MovingPiece.HasMoved = move.PrevMovingPieceHasMoved;
         }
 
+        // ── Пошук короля ────────────────────────────────────────────────────────
 
         /// <summary>Знаходить позицію короля заданого кольору.</summary>
         public Position FindKing(PieceColor color)
@@ -186,12 +202,13 @@ namespace ChessTutor.Models
                 for (int c = 0; c < 8; c++)
                 {
                     var p = _grid[r, c];
-                    if (p is King && p.Color == color)
+                    if (p != null && p.Type == PieceType.King && p.Color == color)
                         return new Position(r, c);
                 }
             throw new InvalidOperationException($"Короля кольору {color} не знайдено на дошці.");
         }
 
+        // ── Глибоке копіювання ──────────────────────────────────────────────────
 
         /// <summary>
         /// Повертає копію дошки (для ШІ-перебору без зміни оригіналу).
@@ -206,6 +223,7 @@ namespace ChessTutor.Models
             return clone;
         }
 
+        // ── Допоміжний метод ────────────────────────────────────────────────────
 
         private Piece CreatePromotedPiece(PieceType type, PieceColor color)
         {

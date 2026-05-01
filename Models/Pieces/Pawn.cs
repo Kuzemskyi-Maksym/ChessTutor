@@ -52,7 +52,7 @@ namespace ChessTutor.Models.Pieces
                     AddPawnMove(from, diag, promRow, board, moves);
 
                 // Взяття на проході
-                if (diag == board.EnPassantTarget)
+                if (board.EnPassantTarget.HasValue && diag == board.EnPassantTarget.Value)
                 {
                     var epMove = new Move(this, from, diag)
                     {

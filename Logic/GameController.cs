@@ -71,38 +71,43 @@ namespace ChessTutor.Logic
 
         /// <summary>
         /// Виконує хід людини-гравця.
-        /// Після вдалого ходу автоматично запускає хід ШІ (якщо режим VsComputer).
+        /// Шукає легальний хід серед списку валідатора, тому правильно
+        /// обробляє рокіровку, взяття на проході та перетворення пішака.
         /// </summary>
         /// <param name="from">Початкова позиція.</param>
         /// <param name="to">Кінцева позиція.</param>
         /// <returns>true якщо хід виконано.</returns>
         public bool TryHumanMove(Position from, Position to)
         {
-            if (State.Status == GameStatus.Checkmate || State.Status == GameStatus.Stalemate)
+            if (State.Status == GameStatus.Checkmate
+                || State.Status == GameStatus.Stalemate
+                || State.Status == GameStatus.Draw)
                 return false;
 
             Piece piece = Board.GetPiece(from);
             if (piece == null || piece.Color != State.CurrentTurn) return false;
 
-            // Перетворення пішака — запитуємо UI
-            MoveType type = MoveType.Normal;
-            PieceType promotion = PieceType.Queen;
+            // Беремо реальні легальні ходи — у них вже встановлено правильний Type
+            var legalMoves = Validator.GetLegalMoves(from, Board);
 
-            bool isPromotion = piece is Models.Pieces.Pawn
-                && ((piece.Color == PieceColor.White && to.Row == 7)
-                 || (piece.Color == PieceColor.Black && to.Row == 0));
+            // Шукаємо хід з потрібним призначенням
+            Move move = null;
+            foreach (var m in legalMoves)
+                if (m.To == to) { move = m; break; }
 
-            if (isPromotion)
+            if (move == null) return false; // ход неможливий
+
+            // Якщо це перетворення пішака — запитуємо UI який саме варіант
+            if (move.Type == MoveType.Promotion)
             {
-                type = MoveType.Promotion;
-                promotion = PromotionRequested?.Invoke() ?? PieceType.Queen;
+                PieceType promotion = PromotionRequested?.Invoke() ?? PieceType.Queen;
+                // У GetLegalMoves для промоції є 4 ходи (Queen/Rook/Bishop/Knight)
+                Move chosen = null;
+                foreach (var m in legalMoves)
+                    if (m.To == to && m.Type == MoveType.Promotion && m.PromotionPieceType == promotion)
+                    { chosen = m; break; }
+                if (chosen != null) move = chosen;
             }
-
-            var move = new Move(piece, from, to)
-            {
-                Type = type,
-                PromotionPieceType = promotion
-            };
 
             bool success = State.TryMakeMove(move);
             if (!success) return false;
@@ -110,10 +115,44 @@ namespace ChessTutor.Logic
             MoveMade?.Invoke(move);
             StatusChanged?.Invoke(State.Status);
 
-            // Якщо ШІ ходить — запускаємо асинхронно
-            if (State.Mode == GameMode.VsComputer && State.Status == GameStatus.InProgress)
-                System.Threading.ThreadPool.QueueUserWorkItem(_ => MakeAIMove());
+            return true;
+        }
 
+        /// <summary>Чи є поточний гравець комп'ютером?</summary>
+        public bool IsCurrentPlayerAI()
+        {
+            IPlayer cur = State.CurrentTurn == PieceColor.White ? _whitePlayer : _blackPlayer;
+            return cur is AIPlayer;
+        }
+
+        /// <summary>Глибина пошуку поточного AI (для відображення/налаштування).</summary>
+        public int GetCurrentAIDepth()
+        {
+            IPlayer cur = State.CurrentTurn == PieceColor.White ? _whitePlayer : _blackPlayer;
+            AIPlayer ai = cur as AIPlayer;
+            return ai != null ? ai.Depth : 0;
+        }
+
+        /// <summary>
+        /// Обчислює та виконує хід AI для поточного гравця.
+        /// Цей метод НЕ запускає потік сам — викликати з фонового потоку.
+        /// Не викликає подію MoveMade, бо UI робить це сам після Invoke.
+        /// </summary>
+        public Move ComputeAIMove()
+        {
+            IPlayer ai = State.CurrentTurn == PieceColor.White ? _whitePlayer : _blackPlayer;
+            if (!(ai is AIPlayer)) return null;
+            return ai.GetMove(Board, Validator);
+        }
+
+        /// <summary>Виконує хід (як гравець, так і AI), кидає події UI.</summary>
+        public bool ApplyComputedMove(Move move)
+        {
+            if (move == null) return false;
+            bool ok = State.TryMakeMove(move);
+            if (!ok) return false;
+            MoveMade?.Invoke(move);
+            StatusChanged?.Invoke(State.Status);
             return true;
         }
 
@@ -122,22 +161,6 @@ namespace ChessTutor.Logic
         /// </summary>
         public List<Move> GetLegalMovesFor(Position pos) =>
             Validator.GetLegalMoves(pos, Board);
-
-
-        private void MakeAIMove()
-        {
-            IPlayer ai = State.CurrentTurn == PieceColor.White ? _whitePlayer : _blackPlayer;
-            if (!(ai is AIPlayer)) return;
-
-            Move move = ai.GetMove(Board, Validator);
-            if (move == null) return;
-
-            // Виконуємо хід у потоці UI через Invoke (WinForms)
-            // MainForm підписується на MoveMade і викликає Invoke
-            State.TryMakeMove(move);
-            MoveMade?.Invoke(move);
-            StatusChanged?.Invoke(State.Status);
-        }
 
 
         /// <summary>Зберігає результат партії у файл.</summary>

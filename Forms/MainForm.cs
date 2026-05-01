@@ -345,23 +345,27 @@ namespace ChessTutor.Forms
         private void DrawPiece(Graphics g, Piece piece, int px, int py)
         {
             string symbol = _pieceSymbols[(piece.Type, piece.Color)];
+            int margin = 4;
+            var bgRect = new RectangleF(px + margin, py + margin, CellSize - margin * 2, CellSize - margin * 2);
 
-            using (var font = new Font("Segoe UI Symbol", CellSize * 0.68f, FontStyle.Regular, GraphicsUnit.Pixel))
+            // Фон фігури — коло для розрізнення білих і чорних
+            if (piece.Color == PieceColor.White)
+                g.FillEllipse(new SolidBrush(Color.FromArgb(220, 255, 255, 255)), bgRect);
+            else
+                g.FillEllipse(new SolidBrush(Color.FromArgb(200, 30, 30, 30)), bgRect);
+
+            using (var font = new Font("Segoe UI Symbol", CellSize * 0.60f, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 SizeF size = g.MeasureString(symbol, font);
                 float x = px + (CellSize - size.Width) / 2f;
                 float y = py + (CellSize - size.Height) / 2f;
 
-                if (piece.Color == PieceColor.White)
-                {
-                    g.DrawString(symbol, font, new SolidBrush(Color.FromArgb(100, 0, 0, 0)), x + 1.5f, y + 1.5f);
-                    g.DrawString(symbol, font, Brushes.White, x, y);
-                }
-                else
-                {
-                    g.DrawString(symbol, font, new SolidBrush(Color.FromArgb(100, 255, 255, 255)), x + 1f, y + 1f);
-                    g.DrawString(symbol, font, new SolidBrush(Color.FromArgb(20, 20, 20)), x, y);
-                }
+                // Символ чорного кольору для білих фігур, білого — для чорних
+                Brush brush = piece.Color == PieceColor.White
+                    ? new SolidBrush(Color.FromArgb(20, 20, 20))
+                    : new SolidBrush(Color.FromArgb(240, 240, 240));
+
+                g.DrawString(symbol, font, brush, x, y);
             }
         }
 
@@ -437,10 +441,20 @@ namespace ChessTutor.Forms
                 return;
             }
 
-            _aiThinking = false;
             AddMoveToList(move);
             UpdateLabels();
             _boardPanel.Invalidate();
+
+            // Якщо тепер хід AI і гра ще триває — запускаємо AI
+            if (!_aiThinking
+                && _controller.State.Mode == GameMode.VsComputer
+                && _controller.State.Status != GameStatus.Checkmate
+                && _controller.State.Status != GameStatus.Stalemate
+                && _controller.State.Status != GameStatus.Draw
+                && _controller.IsCurrentPlayerAI())
+            {
+                TriggerAIMove();
+            }
         }
 
         private void OnStatusChanged(GameStatus status)
@@ -570,23 +584,35 @@ namespace ChessTutor.Forms
 
             ThreadPool.QueueUserWorkItem(_ =>
             {
-                var ai = new AIPlayer(_controller.State.CurrentTurn, _aiDepth);
-                Move mov = ai.GetMove(_controller.Board, _controller.Validator);
-                if (mov == null) return;
+                Move mov = null;
+                try
+                {
+                    mov = _controller.ComputeAIMove();
+                }
+                catch (Exception ex)
+                {
+                    Invoke(new Action(() =>
+                    {
+                        _aiThinking = false;
+                        UpdateLabels();
+                        _boardPanel.Invalidate();
+                        MessageBox.Show("Помилка ШІ: " + ex.Message, "ШІ",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }));
+                    return;
+                }
 
                 Invoke(new Action(() =>
                 {
-                    bool ok = _controller.State.TryMakeMove(mov);
-                    if (ok)
+                    _aiThinking = false;
+                    if (mov == null)
                     {
-                        _aiThinking = false;
-                        AddMoveToList(mov);
                         UpdateLabels();
                         _boardPanel.Invalidate();
-
-                        // Перевіряємо статус після ходу ШІ
-                        OnStatusChanged(_controller.State.Status);
+                        return;
                     }
+                    _controller.ApplyComputedMove(mov);
+                    // OnMoveMade/OnStatusChanged вже викликаються через події
                 }));
             });
         }
