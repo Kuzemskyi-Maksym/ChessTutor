@@ -1,12 +1,142 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
-using System.Threading.Tasks;
+using ChessTutor.Logic;
 
 namespace ChessTutor.Models
 {
-    internal class GameState
+    public enum GameStatus { InProgress, Check, Checkmate, Stalemate, Draw }
+    public enum GameMode { TwoPlayers, VsComputer }
+
+    /// <summary>
+    /// Зберігає поточний стан шахової партії:
+    /// чий хід, статус гри, список ходів, кількість ходів без взяття/пішака (правило 50 ходів).
+    /// </summary>
+    public class GameState
     {
+
+        private readonly Board _board;
+        private readonly MoveValidator _validator;
+
+
+        public PieceColor CurrentTurn { get; private set; }
+        public GameStatus Status { get; private set; }
+        public GameMode Mode { get; set; }
+        public List<Move> MoveHistory { get; } = new List<Move>();
+        public int HalfMoveClock { get; private set; } // для правила 50 ходів
+
+
+        public GameState(Board board, MoveValidator validator)
+        {
+            _board = board;
+            _validator = validator;
+            CurrentTurn = PieceColor.White;
+            Status = GameStatus.InProgress;
+        }
+
+
+        /// <summary>Скидає стан до початку партії.</summary>
+        public void Reset()
+        {
+            _board.SetupStandardPosition();
+            CurrentTurn = PieceColor.White;
+            Status = GameStatus.InProgress;
+            HalfMoveClock = 0;
+            MoveHistory.Clear();
+        }
+
+
+        /// <summary>
+        /// Виконує хід, якщо він легальний.
+        /// Оновлює статус гри та перемикає гравця.
+        /// </summary>
+        /// <returns>true якщо хід виконано успішно.</returns>
+        public bool TryMakeMove(Move move)
+        {
+            // Лічильник 50 ходів
+            bool isCapture = move.CapturedPiece != null;
+            bool isPawn = move.MovingPiece is Pieces.Pawn;
+            HalfMoveClock = (isCapture || isPawn) ? 0 : HalfMoveClock + 1;
+
+            _board.ApplyMove(move);
+            MoveHistory.Add(move);
+
+            // Перемикаємо гравця і оновлюємо статус
+            CurrentTurn = Opponent(CurrentTurn);
+            UpdateStatus();
+
+            return true;
+        }
+
+        // ── Оновлення статусу ────────────────────────────────────────────────────
+
+        private void UpdateStatus()
+        {
+            if (HalfMoveClock >= 100)                         // 50 ходів без взяття
+            {
+                Status = GameStatus.Draw;
+            }
+            else if (_validator.IsCheckmate(CurrentTurn, _board))
+            {
+                Status = GameStatus.Checkmate;
+            }
+            else if (_validator.IsStalemate(CurrentTurn, _board))
+            {
+                Status = GameStatus.Stalemate;
+            }
+            else if (_validator.IsInCheck(CurrentTurn, _board))
+            {
+                Status = GameStatus.Check;
+            }
+            else
+            {
+                Status = GameStatus.InProgress;
+            }
+        }
+
+
+        /// <summary>
+        /// Зберігає результат і список ходів у текстовий файл.
+        /// Виконує вимогу ТЗ: «збереження результатів у текстовий файл».
+        /// </summary>
+        /// <param name="path">Шлях до файлу.</param>
+        public void SaveToFile(string path)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("=== Шаховий тренажер — результат партії ===");
+            sb.AppendLine($"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}");
+            sb.AppendLine($"Режим: {(Mode == GameMode.VsComputer ? "Проти комп'ютера" : "2 гравці")}");
+            sb.AppendLine($"Статус: {StatusToUkrainian()}");
+            sb.AppendLine($"Всього ходів: {MoveHistory.Count}");
+            sb.AppendLine();
+            sb.AppendLine("Запис партії:");
+
+            for (int i = 0; i < MoveHistory.Count; i++)
+            {
+                if (i % 2 == 0)
+                    sb.Append($"{i / 2 + 1}. ");
+                sb.Append(MoveHistory[i].ToString() + "  ");
+                if (i % 2 == 1)
+                    sb.AppendLine();
+            }
+
+            File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
+        }
+
+
+        private string StatusToUkrainian()
+        {
+            switch (Status)
+            {
+                case GameStatus.Checkmate: return $"Шахмат ({Opponent(CurrentTurn)} виграв)";
+                case GameStatus.Stalemate: return "Пат — нічия";
+                case GameStatus.Draw: return "Нічия (правило 50 ходів)";
+                default: return "Гра перервана";
+            }
+        }
+
+        private static PieceColor Opponent(PieceColor c) =>
+            c == PieceColor.White ? PieceColor.Black : PieceColor.White;
     }
 }
