@@ -15,12 +15,12 @@ namespace ChessTutor.Models
     /// </summary>
     public class GameState
     {
-        // ── Залежності ───────────────────────────────────────────────────────────
+        // ── Залежності ──
 
         private readonly Board _board;
         private readonly MoveValidator _validator;
 
-        // ── Властивості ──────────────────────────────────────────────────────────
+        // ─ Властивості ─
 
         public PieceColor CurrentTurn { get; private set; }
         public GameStatus Status { get; private set; }
@@ -28,7 +28,7 @@ namespace ChessTutor.Models
         public List<Move> MoveHistory { get; } = new List<Move>();
         public int HalfMoveClock { get; private set; } // для правила 50 ходів
 
-        // ── Конструктор ──────────────────────────────────────────────────────────
+        // ─ Конструктор ─
 
         public GameState(Board board, MoveValidator validator)
         {
@@ -38,7 +38,7 @@ namespace ChessTutor.Models
             Status = GameStatus.InProgress;
         }
 
-        // ── Початок нової гри ────────────────────────────────────────────────────
+        // ─ Початок нової гри ────────────────────────────────────────────────────
 
         /// <summary>Скидає стан до початку партії.</summary>
         public void Reset()
@@ -50,7 +50,7 @@ namespace ChessTutor.Models
             MoveHistory.Clear();
         }
 
-        // ── Виконання ходу ───────────────────────────────────────────────────────
+        // ─ Виконання ходу ─
 
         /// <summary>
         /// Виконує хід, якщо він легальний.
@@ -74,7 +74,7 @@ namespace ChessTutor.Models
             return true;
         }
 
-        // ── Оновлення статусу ────────────────────────────────────────────────────
+        // ─ Оновлення статусу ─
 
         private void UpdateStatus()
         {
@@ -100,7 +100,7 @@ namespace ChessTutor.Models
             }
         }
 
-        // ── Збереження результатів ───────────────────────────────────────────────
+        // ─ Збереження результатів ─
 
         /// <summary>
         /// Зберігає результат і список ходів у текстовий файл.
@@ -130,7 +130,7 @@ namespace ChessTutor.Models
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         }
 
-        // ── Допоміжні ────────────────────────────────────────────────────────────
+        // ─ Допоміжні ─
 
         private string StatusToUkrainian()
         {

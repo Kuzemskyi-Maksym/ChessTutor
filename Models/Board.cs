@@ -9,7 +9,7 @@ namespace ChessTutor.Models
     /// </summary>
     public class Board
     {
-        // ── Поля ─────────────────────────────────────────────────────────────────
+        // ─ Поля ─
 
         /// <summary>Сітка фігур [рядок, стовпець], 0-based (рядок 0 = лінія 1 для білих).</summary>
         private readonly Piece[,] _grid = new Piece[8, 8];
@@ -20,7 +20,7 @@ namespace ChessTutor.Models
         /// </summary>
         public Position? EnPassantTarget { get; private set; }
 
-        // ── Доступ до клітин ────────────────────────────────────────────────────
+        // ─ Доступ до клітин ─
 
         /// <summary>Повертає фігуру на позиції (або null якщо порожньо).</summary>
         public Piece GetPiece(Position pos) => _grid[pos.Row, pos.Col];
@@ -28,7 +28,7 @@ namespace ChessTutor.Models
         /// <summary>Встановлює фігуру на позицію (null = очистити клітину).</summary>
         public void SetPiece(Position pos, Piece piece) => _grid[pos.Row, pos.Col] = piece;
 
-        // ── Розміщення фігур ────────────────────────────────────────────────────
+        // ─ Розміщення фігур ─
 
         /// <summary>
         /// Розміщує всі фігури у стандартну початкову позицію.
@@ -72,7 +72,7 @@ namespace ChessTutor.Models
             EnPassantTarget = null;
         }
 
-        // ── Виконання ходу ──────────────────────────────────────────────────────
+        // ─ Виконання ходу ─
 
         /// <summary>
         /// Виконує хід на дошці: переміщує фігуру, оновлює стан рокіровки,
@@ -93,7 +93,7 @@ namespace ChessTutor.Models
 
             switch (move.Type)
             {
-                // ─── Звичайний хід / взяття ──────────────────────────────────
+                // ─ Звичайний хід / взяття ─
                 case MoveType.Normal:
                 default:
                     SetPiece(move.To, piece);
@@ -107,7 +107,7 @@ namespace ChessTutor.Models
                     }
                     break;
 
-                // ─── Рокіровка ───────────────────────────────────────────────
+                // ─ Рокіровка ─
                 case MoveType.CastlingKingside:
                 case MoveType.CastlingQueenside:
                     int rookFromCol = move.Type == MoveType.CastlingKingside ? 7 : 0;
@@ -127,7 +127,7 @@ namespace ChessTutor.Models
                     rook.HasMoved = true;
                     break;
 
-                // ─── Взяття на проході ───────────────────────────────────────
+                // ─ Взяття на проході ─
                 case MoveType.EnPassant:
                     var epCapture = new Position(move.From.Row, move.To.Col);
                     // Зберігаємо взятого пішака якщо він ще не записаний
@@ -138,7 +138,7 @@ namespace ChessTutor.Models
                     SetPiece(move.From, null);
                     break;
 
-                // ─── Перетворення пішака ─────────────────────────────────────
+                // ─ Перетворення пішака ─
                 case MoveType.Promotion:
                     SetPiece(move.From, null);
                     SetPiece(move.To, CreatePromotedPiece(move.PromotionPieceType, piece.Color));
@@ -193,7 +193,7 @@ namespace ChessTutor.Models
             move.MovingPiece.HasMoved = move.PrevMovingPieceHasMoved;
         }
 
-        // ── Пошук короля ────────────────────────────────────────────────────────
+        // ─ Пошук короля ─
 
         /// <summary>Знаходить позицію короля заданого кольору.</summary>
         public Position FindKing(PieceColor color)
@@ -208,7 +208,7 @@ namespace ChessTutor.Models
             throw new InvalidOperationException($"Короля кольору {color} не знайдено на дошці.");
         }
 
-        // ── Глибоке копіювання ──────────────────────────────────────────────────
+        // ─ Глибоке копіювання ─
 
         /// <summary>
         /// Повертає копію дошки (для ШІ-перебору без зміни оригіналу).
@@ -223,7 +223,7 @@ namespace ChessTutor.Models
             return clone;
         }
 
-        // ── Допоміжний метод ────────────────────────────────────────────────────
+        // ─ Допоміжний метод ─
 
         private Piece CreatePromotedPiece(PieceType type, PieceColor color)
         {

@@ -34,7 +34,7 @@ namespace ChessTutor.AI
             _validator = new MoveValidator();
         }
 
-        // ── Головний метод ────────────────────────────────────────────────────
+        // ─ Головний метод ─
 
         /// <summary>
         /// Вибирає найкращий хід за допомогою мінімаксу з альфа-бета відсіканням.
@@ -71,7 +71,7 @@ namespace ChessTutor.AI
             return bestMove;
         }
 
-        // ── Мінімакс з альфа-бета відсіканням ───────────────────────────────
+        // ─ Мінімакс з альфа-бета відсіканням ─
 
         /// <summary>
         /// Рекурсивний мінімакс. Повертає оцінку позиції з точки зору <paramref name="color"/>.
@@ -111,7 +111,7 @@ namespace ChessTutor.AI
             return best;
         }
 
-        // ── Оцінювальна функція ──────────────────────────────────────────────
+        // ─ Оцінювальна функція ─
 
         /// <summary>
         /// Оцінює позицію з точки зору гравця <paramref name="color"/>.
@@ -161,7 +161,7 @@ namespace ChessTutor.AI
             }
         }
 
-        // ── Допоміжні ────────────────────────────────────────────────────────
+        // ─ Допоміжні ─
 
         private static PieceColor Opponent(PieceColor c) =>
             c == PieceColor.White ? PieceColor.Black : PieceColor.White;

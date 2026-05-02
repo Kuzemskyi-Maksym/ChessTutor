@@ -11,7 +11,7 @@ namespace ChessTutor.Logic
     /// </summary>
     public class MoveValidator
     {
-        // ── Публічний API ────────────────────────────────────────────────────────
+        // ─ Публічний API ─
 
         /// <summary>
         /// Повертає список усіх легальних ходів для фігури на позиції <paramref name="from"/>.
@@ -67,7 +67,7 @@ namespace ChessTutor.Logic
         public bool IsStalemate(PieceColor color, Board board) =>
             !IsInCheck(color, board) && GetAllLegalMoves(color, board).Count == 0;
 
-        // ── Внутрішня логіка ─────────────────────────────────────────────────────
+        // ─ Внутрішня логіка ─
 
         /// <summary>
         /// Перевіряє, чи залишив би хід власного короля під шахом.
@@ -99,7 +99,7 @@ namespace ChessTutor.Logic
             return false;
         }
 
-        // ── Рокіровка ────────────────────────────────────────────────────────────
+        // ─ Рокіровка ─
 
         private List<Move> GetCastlingMoves(Position from, Board board, Piece piece)
         {
