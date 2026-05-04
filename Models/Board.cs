@@ -78,14 +78,14 @@ namespace ChessTutor.Models
         /// Виконує хід на дошці: переміщує фігуру, оновлює стан рокіровки,
         /// взяття на проході та перетворення пішака.
         /// Не перевіряє легальність — це завдання MoveValidator.
+        /// Усі дані для UndoMove зберігаються у самому move.
         /// </summary>
-        /// <param name="move">Хід до виконання.</param>
-        public void ApplyMove(Move move, out Position? prevEnPassant)
+        public void ApplyMove(Move move)
         {
             Piece piece = GetPiece(move.From);
 
             // Зберігаємо поточний EnPassantTarget щоб UndoMove міг відновити
-            prevEnPassant = EnPassantTarget;
+            move.PrevEnPassantTarget = EnPassantTarget;
             EnPassantTarget = null;
 
             // Зберігаємо попередній стан HasMoved для коректного UndoMove
@@ -149,11 +149,11 @@ namespace ChessTutor.Models
         }
 
         /// <summary>
-        /// Скасовує хід (використовується ШІ для перебору варіантів).
+        /// Скасовує хід (використовується ШІ для перебору варіантів та UI Undo).
         /// </summary>
-        public void UndoMove(Move move, Position? prevEnPassant)
+        public void UndoMove(Move move)
         {
-            EnPassantTarget = prevEnPassant;
+            EnPassantTarget = move.PrevEnPassantTarget;
             Piece piece = GetPiece(move.To);
 
             switch (move.Type)

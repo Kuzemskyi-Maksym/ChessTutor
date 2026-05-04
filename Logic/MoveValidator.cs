@@ -75,9 +75,9 @@ namespace ChessTutor.Logic
         /// </summary>
         private bool WouldLeaveKingInCheck(Move move, Board board, PieceColor color)
         {
-            board.ApplyMove(move, out Position? prevEP);
+            board.ApplyMove(move);
             bool inCheck = IsInCheck(color, board);
-            board.UndoMove(move, prevEP);
+            board.UndoMove(move);
             return inCheck;
         }
 

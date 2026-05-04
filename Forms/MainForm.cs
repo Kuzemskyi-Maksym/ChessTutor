@@ -46,7 +46,23 @@ namespace ChessTutor.Forms
         private ListBox _moveList;
         private Label _statusLabel;
         private Label _turnLabel;
+        private Label _capturedWhiteLabel;   // взяті білі фігури (з'їдені чорними)
+        private Label _capturedBlackLabel;   // взяті чорні фігури (з'їдені білими)
+        private Label _materialLabel;        // матеріальна перевага
+        private Label _hintLabel;            // повідомлення про некор. дії
         private MenuStrip _menu;
+        private ToolStrip _toolbar;
+        private System.Windows.Forms.Timer _hintTimer; // таймер для авто-приховування підказки
+
+        // ── Спільні графічні ресурси (звільняються при закритті форми) ────────────
+        private static readonly Brush BrushBoardLight = new SolidBrush(ColorLight);
+        private static readonly Brush BrushBoardDark  = new SolidBrush(ColorDark);
+        private static readonly Brush BrushSelected   = new SolidBrush(Color.FromArgb(205, 210, 56));
+        private static readonly Brush BrushKingCheck  = new SolidBrush(Color.FromArgb(220, 60, 60));
+        private static readonly Brush BrushLegalDot   = new SolidBrush(ColorLegal);
+        private static readonly Pen   PenLegalCapture = new Pen(ColorLegal, 4f);
+        private static readonly Pen   PenBoardBorder  = new Pen(Color.FromArgb(80, 80, 80), 2f);
+        private static readonly Brush BrushAIBg       = new SolidBrush(Color.FromArgb(160, 0, 0, 0));
 
         // ── Зображення фігур ─────────────────────────────────────────────────────
 
@@ -83,6 +99,17 @@ namespace ChessTutor.Forms
             _controller.MoveMade += OnMoveMade;
             _controller.StatusChanged += OnStatusChanged;
             _controller.PromotionRequested += OnPromotionRequested;
+            _controller.BoardChanged += OnBoardChanged;
+        }
+
+        /// <summary>Перемальовує дошку та повністю переобчислює правий бічний UI.</summary>
+        private void OnBoardChanged()
+        {
+            if (InvokeRequired) { Invoke(new Action(OnBoardChanged)); return; }
+            RebuildMoveList();
+            UpdateCapturedPanel();
+            UpdateLabels();
+            _boardPanel.Invalidate();
         }
 
         // ═════════════════════════════════════════════════════════════════════════
@@ -93,12 +120,16 @@ namespace ChessTutor.Forms
         {
             // ── Форма ────────────────────────────────────────────────────────────
             Text = "Шаховий тренажер — КПІ ім. І. Сікорського";
-            Size = new Size(BoardSize + BoardOffset * 2 + 260, BoardSize + BoardOffset * 2 + 80);
+            // Збільшено праву панель щоб уміщувати захоплені фігури і матеріальну перевагу
+            Size = new Size(BoardSize + BoardOffset * 2 + 290, BoardSize + BoardOffset * 2 + 130);
             MinimumSize = Size;
             MaximumSize = Size;
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(40, 40, 40);
             Font = new Font("Segoe UI", 9f);
+            KeyPreview = true;
+            KeyDown += OnFormKeyDown;
+            FormClosed += OnFormClosed;
 
             // ── Меню ─────────────────────────────────────────────────────────────
             _menu = new MenuStrip { BackColor = Color.FromArgb(55, 55, 55), ForeColor = Color.White };
@@ -125,6 +156,8 @@ namespace ChessTutor.Forms
             }
             gameMenu.DropDownItems.Add(depthMenu);
             gameMenu.DropDownItems.Add(new ToolStripSeparator());
+            gameMenu.DropDownItems.Add("Скасувати хід (Ctrl+Z)", null, (s, e) => DoUndo());
+            gameMenu.DropDownItems.Add(new ToolStripSeparator());
             gameMenu.DropDownItems.Add("Зберегти результат...", null, OnSaveGame);
             gameMenu.DropDownItems.Add(new ToolStripSeparator());
             gameMenu.DropDownItems.Add("Вийти", null, (s, e) => Application.Exit());
@@ -137,11 +170,32 @@ namespace ChessTutor.Forms
             Controls.Add(_menu);
             MainMenuStrip = _menu;
 
+            // ── Toolbar ──────────────────────────────────────────────────────────
+            _toolbar = new ToolStrip
+            {
+                BackColor = Color.FromArgb(50, 50, 50),
+                ForeColor = Color.White,
+                GripStyle = ToolStripGripStyle.Hidden,
+                ImageScalingSize = new Size(18, 18),
+                Padding = new Padding(4)
+            };
+            _toolbar.Items.Add(MakeToolButton("⟳ Нова",   "Нова гра (2 гравці)", (s, e) => StartNewTwoPlayerGame()));
+            _toolbar.Items.Add(MakeToolButton("♔ vs ШІ",  "Грати білими проти ШІ", (s, e) => StartVsAI(PieceColor.White)));
+            _toolbar.Items.Add(MakeToolButton("♚ vs ШІ",  "Грати чорними проти ШІ", (s, e) => StartVsAI(PieceColor.Black)));
+            _toolbar.Items.Add(new ToolStripSeparator());
+            _toolbar.Items.Add(MakeToolButton("↶ Назад",  "Скасувати хід (Ctrl+Z)", (s, e) => DoUndo()));
+            _toolbar.Items.Add(MakeToolButton("⇅ Перевернути", "Перевернути дошку", (s, e) => { _flipped = !_flipped; _boardPanel.Invalidate(); }));
+            _toolbar.Items.Add(new ToolStripSeparator());
+            _toolbar.Items.Add(MakeToolButton("💾 Зберегти", "Зберегти результат у файл", OnSaveGame));
+            Controls.Add(_toolbar);
+
+            int topOffset = _menu.Height + _toolbar.Height;
+
             // ── Дошка ────────────────────────────────────────────────────────────
             // Використовуємо панель з подвійним буферуванням — щоб не блимало при перерисовці
             _boardPanel = new DoubleBufferedPanel
             {
-                Location = new Point(BoardOffset, _menu.Height + BoardOffset),
+                Location = new Point(BoardOffset, topOffset + BoardOffset),
                 Size = new Size(BoardSize + BoardOffset, BoardSize + BoardOffset),
                 BackColor = Color.FromArgb(40, 40, 40)
             };
@@ -151,12 +205,13 @@ namespace ChessTutor.Forms
 
             // ── Права панель ─────────────────────────────────────────────────────
             int rightX = BoardSize + BoardOffset * 2 + 10;
-            int rightY = _menu.Height + BoardOffset;
+            int rightY = topOffset + BoardOffset;
+            int rightW = 250;
 
             _turnLabel = new Label
             {
                 Location = new Point(rightX, rightY),
-                Size = new Size(220, 30),
+                Size = new Size(rightW, 28),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
                 Text = "Хід: Білі"
@@ -165,18 +220,76 @@ namespace ChessTutor.Forms
 
             _statusLabel = new Label
             {
-                Location = new Point(rightX, rightY + 35),
-                Size = new Size(220, 30),
+                Location = new Point(rightX, rightY + 30),
+                Size = new Size(rightW, 22),
                 ForeColor = Color.FromArgb(200, 200, 200),
                 Font = new Font("Segoe UI", 9f),
                 Text = ""
             };
             Controls.Add(_statusLabel);
 
+            // Підказка / повідомлення про некор. дії — оранжева, авто-зникає
+            _hintLabel = new Label
+            {
+                Location = new Point(rightX, rightY + 54),
+                Size = new Size(rightW, 22),
+                ForeColor = Color.FromArgb(255, 180, 80),
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+                Text = ""
+            };
+            Controls.Add(_hintLabel);
+
+            // ── Захоплені фігури ─────────────────────────────────────────────────
+            int capY = rightY + 84;
+            var capTitle = new Label
+            {
+                Location = new Point(rightX, capY),
+                Size = new Size(rightW, 18),
+                ForeColor = Color.FromArgb(180, 180, 180),
+                Text = "Захоплені фігури:"
+            };
+            Controls.Add(capTitle);
+
+            // Ряд для з'їдених білих (на темному фоні — світлі силуети)
+            _capturedWhiteLabel = new Label
+            {
+                Location = new Point(rightX, capY + 20),
+                Size = new Size(rightW, 28),
+                ForeColor = Color.FromArgb(245, 245, 245),
+                BackColor = Color.FromArgb(60, 60, 60),
+                Font = new Font("Segoe UI Symbol", 16f),
+                Text = " "
+            };
+            Controls.Add(_capturedWhiteLabel);
+
+            // Ряд для з'їдених чорних (на світлому фоні — темні силуети)
+            _capturedBlackLabel = new Label
+            {
+                Location = new Point(rightX, capY + 50),
+                Size = new Size(rightW, 28),
+                ForeColor = Color.FromArgb(25, 25, 25),
+                BackColor = Color.FromArgb(220, 200, 165),
+                Font = new Font("Segoe UI Symbol", 16f),
+                Text = " "
+            };
+            Controls.Add(_capturedBlackLabel);
+
+            _materialLabel = new Label
+            {
+                Location = new Point(rightX, capY + 82),
+                Size = new Size(rightW, 22),
+                ForeColor = Color.FromArgb(220, 220, 220),
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Text = "Матеріал: 0"
+            };
+            Controls.Add(_materialLabel);
+
+            // ── Список ходів ────────────────────────────────────────────────────
+            int movesY = capY + 112;
             var movesTitle = new Label
             {
-                Location = new Point(rightX, rightY + 75),
-                Size = new Size(220, 20),
+                Location = new Point(rightX, movesY),
+                Size = new Size(rightW, 20),
                 ForeColor = Color.FromArgb(180, 180, 180),
                 Text = "Список ходів:"
             };
@@ -184,14 +297,56 @@ namespace ChessTutor.Forms
 
             _moveList = new ListBox
             {
-                Location = new Point(rightX, rightY + 98),
-                Size = new Size(220, BoardSize - 98),
+                Location = new Point(rightX, movesY + 22),
+                Size = new Size(rightW, BoardSize - (movesY - rightY) - 22),
                 BackColor = Color.FromArgb(55, 55, 55),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 Font = new Font("Consolas", 9f)
             };
             Controls.Add(_moveList);
+
+            // Таймер для приховування підказки (явно WinForms — щоб не конфліктувало з System.Threading.Timer)
+            _hintTimer = new System.Windows.Forms.Timer { Interval = 2500 };
+            _hintTimer.Tick += (s, e) => { _hintTimer.Stop(); _hintLabel.Text = ""; };
+        }
+
+        /// <summary>Утиліта для створення кнопки тулбара з назвою і tooltip.</summary>
+        private ToolStripButton MakeToolButton(string text, string tooltip, EventHandler click)
+        {
+            var btn = new ToolStripButton(text)
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ToolTipText = tooltip,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Padding = new Padding(6, 2, 6, 2)
+            };
+            btn.Click += click;
+            return btn;
+        }
+
+        /// <summary>Показує користувачу повідомлення (про некор. дію) на 2.5с.</summary>
+        private void ShowHint(string text)
+        {
+            if (_hintLabel == null) return;
+            _hintLabel.Text = text;
+            if (_hintTimer != null)
+            {
+                _hintTimer.Stop();
+                _hintTimer.Start();
+            }
+        }
+
+        /// <summary>Викликає Undo з урахуванням режиму гри.</summary>
+        private void DoUndo()
+        {
+            if (_aiThinking) { ShowHint("ШІ зараз думає, зачекайте"); return; }
+            if (!_controller.State.CanUndo) { ShowHint("Немає ходів для скасування"); return; }
+            // У режимі vs AI повертаємо одразу 2 півходи (хід AI + свій),
+            // щоб після Undo знов хід був за людиною
+            int count = _controller.State.Mode == GameMode.VsComputer ? 2 : 1;
+            _controller.UndoMoves(count);
         }
 
         private int _aiDepth = 3;
@@ -224,6 +379,8 @@ namespace ChessTutor.Forms
             _moveList.Items.Clear();
             _aiThinking = false;
             UpdateLabels();
+            UpdateCapturedPanel();
+            if (_hintLabel != null) _hintLabel.Text = "";
             _boardPanel.Invalidate();
         }
 
@@ -278,16 +435,15 @@ namespace ChessTutor.Forms
 
                     // Колір клітини
                     bool isLight = (displayRow + displayCol) % 2 == 0;
-                    Color cellColor = isLight ? ColorLight : ColorDark;
-
-                    // Підсвічування: шах
+                    Brush cellBrush;
                     if (kingInCheck.HasValue && pos == kingInCheck.Value)
-                        cellColor = Color.FromArgb(220, 60, 60);
-                    // Підсвічування: вибрана клітина
+                        cellBrush = BrushKingCheck;
                     else if (_selectedPos.HasValue && pos == _selectedPos.Value)
-                        cellColor = Color.FromArgb(205, 210, 56);
+                        cellBrush = BrushSelected;
+                    else
+                        cellBrush = isLight ? BrushBoardLight : BrushBoardDark;
 
-                    g.FillRectangle(new SolidBrush(cellColor), rect);
+                    g.FillRectangle(cellBrush, rect);
 
                     // Підсвічування: легальні ходи
                     if (IsLegalTarget(pos))
@@ -296,8 +452,7 @@ namespace ChessTutor.Forms
                         if (target != null)
                         {
                             // Кутові маркери для взяття
-                            using (var p = new Pen(ColorLegal, 4f))
-                                g.DrawRectangle(p, px + 3, py + 3, CellSize - 6, CellSize - 6);
+                            g.DrawRectangle(PenLegalCapture, px + 3, py + 3, CellSize - 6, CellSize - 6);
                         }
                         else
                         {
@@ -305,8 +460,7 @@ namespace ChessTutor.Forms
                             int dotSize = CellSize / 4;
                             int dotX = px + (CellSize - dotSize) / 2;
                             int dotY = py + (CellSize - dotSize) / 2;
-                            using (var b = new SolidBrush(ColorLegal))
-                                g.FillEllipse(b, dotX, dotY, dotSize, dotSize);
+                            g.FillEllipse(BrushLegalDot, dotX, dotY, dotSize, dotSize);
                         }
                     }
 
@@ -318,8 +472,7 @@ namespace ChessTutor.Forms
             }
 
             // ── Рамка дошки ──────────────────────────────────────────────────
-            using (var borderPen = new Pen(Color.FromArgb(80, 80, 80), 2f))
-                g.DrawRectangle(borderPen, BoardOffset, BoardOffset, BoardSize, BoardSize);
+            g.DrawRectangle(PenBoardBorder, BoardOffset, BoardOffset, BoardSize, BoardSize);
 
             // ── Індикатор «ШІ думає» ─────────────────────────────────────────
             if (_aiThinking)
@@ -330,8 +483,7 @@ namespace ChessTutor.Forms
                     SizeF sz = g.MeasureString(text, f);
                     float tx = BoardOffset + (BoardSize - sz.Width) / 2;
                     float ty = BoardOffset + (BoardSize - sz.Height) / 2;
-                    g.FillRectangle(new SolidBrush(Color.FromArgb(160, 0, 0, 0)),
-                        tx - 10, ty - 6, sz.Width + 20, sz.Height + 12);
+                    g.FillRectangle(BrushAIBg, tx - 10, ty - 6, sz.Width + 20, sz.Height + 12);
                     g.DrawString(text, f, Brushes.White, tx, ty);
                 }
             }
@@ -395,12 +547,17 @@ namespace ChessTutor.Forms
             if (!_selectedPos.HasValue)
             {
                 Piece piece = _controller.Board.GetPiece(pos);
-                if (piece != null && piece.Color == _controller.State.CurrentTurn)
+                if (piece == null) return;             // клік по порожній клітині
+                if (piece.Color != _controller.State.CurrentTurn)
                 {
-                    _selectedPos = pos;
-                    _legalMoves = _controller.GetLegalMovesFor(pos);
-                    _boardPanel.Invalidate();
+                    ShowHint("Це фігура суперника");
+                    return;
                 }
+                _selectedPos = pos;
+                _legalMoves = _controller.GetLegalMovesFor(pos);
+                if (_legalMoves.Count == 0)
+                    ShowHint("Ця фігура не має ходів");
+                _boardPanel.Invalidate();
                 return;
             }
 
@@ -426,7 +583,15 @@ namespace ChessTutor.Forms
             }
 
             // Спроба зробити хід
-            _controller.TryHumanMove(_selectedPos.Value, pos);
+            bool ok = _controller.TryHumanMove(_selectedPos.Value, pos);
+            if (!ok)
+            {
+                // Хід неможливий — пояснюємо чому
+                if (_controller.IsCurrentPlayerInCheck())
+                    ShowHint("Хід неможливий — потрібно захистити короля");
+                else
+                    ShowHint("Хід неможливий за правилами");
+            }
 
             _selectedPos = null;
             _legalMoves.Clear();
@@ -447,6 +612,7 @@ namespace ChessTutor.Forms
             }
 
             AddMoveToList(move);
+            UpdateCapturedPanel();
             UpdateLabels();
             _boardPanel.Invalidate();
 
@@ -567,7 +733,7 @@ namespace ChessTutor.Forms
             if (moveNum % 2 == 1)
             {
                 // Хід білих — новий рядок
-                _moveList.Items.Add($"{(moveNum + 1) / 2 + 1,2}. {move}");
+                _moveList.Items.Add($"{(moveNum + 1) / 2,2}. {move}");
             }
             else
             {
@@ -578,7 +744,96 @@ namespace ChessTutor.Forms
                     _moveList.Items[_moveList.Items.Count - 1] = $"{last}  {move}";
                 }
             }
-            _moveList.TopIndex = _moveList.Items.Count - 1;
+            _moveList.TopIndex = Math.Max(0, _moveList.Items.Count - 1);
+        }
+
+        /// <summary>Повністю переобчислює список ходів з MoveHistory (після Undo чи перегляду).</summary>
+        private void RebuildMoveList()
+        {
+            _moveList.Items.Clear();
+            var hist = _controller.State.MoveHistory;
+            for (int i = 0; i < hist.Count; i++)
+            {
+                if (i % 2 == 0)
+                    _moveList.Items.Add($"{i / 2 + 1,2}. {hist[i]}");
+                else
+                {
+                    string last = _moveList.Items[_moveList.Items.Count - 1].ToString();
+                    _moveList.Items[_moveList.Items.Count - 1] = $"{last}  {hist[i]}";
+                }
+            }
+            _moveList.TopIndex = Math.Max(0, _moveList.Items.Count - 1);
+        }
+
+        /// <summary>
+        /// Підраховує захоплені фігури з MoveHistory і виводить їх символами,
+        /// плюс матеріальну перевагу у пунктах (P=1, N=B=3, R=5, Q=9).
+        /// </summary>
+        private void UpdateCapturedPanel()
+        {
+            if (_capturedWhiteLabel == null) return;
+
+            // Стандартна вартість фігур (без короля)
+            int Value(PieceType t)
+            {
+                switch (t)
+                {
+                    case PieceType.Pawn: return 1;
+                    case PieceType.Knight:
+                    case PieceType.Bishop: return 3;
+                    case PieceType.Rook: return 5;
+                    case PieceType.Queen: return 9;
+                    default: return 0;
+                }
+            }
+
+            var capturedWhite = new List<PieceType>(); // знятих білих фігур
+            var capturedBlack = new List<PieceType>();
+            int materialDiff = 0; // позитивне = перевага білих
+
+            foreach (var m in _controller.State.MoveHistory)
+            {
+                if (m.CapturedPiece == null) continue;
+                int v = Value(m.CapturedPiece.Type);
+                if (m.CapturedPiece.Color == PieceColor.White)
+                {
+                    capturedWhite.Add(m.CapturedPiece.Type);
+                    materialDiff -= v;
+                }
+                else
+                {
+                    capturedBlack.Add(m.CapturedPiece.Type);
+                    materialDiff += v;
+                }
+            }
+
+            // Сортуємо за вартістю (старші — спочатку), щоб краще читалося
+            capturedWhite.Sort((a, b) => Value(b).CompareTo(Value(a)));
+            capturedBlack.Sort((a, b) => Value(b).CompareTo(Value(a)));
+
+            _capturedWhiteLabel.Text = string.Concat(capturedWhite.ConvertAll(t => _pieceSymbol[t] + " "));
+            _capturedBlackLabel.Text = string.Concat(capturedBlack.ConvertAll(t => _pieceSymbol[t] + " "));
+
+            string sign = materialDiff > 0 ? "+" : "";
+            _materialLabel.Text = materialDiff == 0
+                ? "Матеріал: рівно"
+                : $"Матеріал: {sign}{materialDiff} ({(materialDiff > 0 ? "білі" : "чорні")} попереду)";
+        }
+
+        /// <summary>Глобальна обробка клавіатури (Ctrl+Z = Undo).</summary>
+        private void OnFormKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.Z)
+            {
+                DoUndo();
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>Звільнення ресурсів при закритті форми.</summary>
+        private void OnFormClosed(object sender, FormClosedEventArgs e)
+        {
+            _hintTimer?.Dispose();
         }
 
         private void TriggerAIMove()

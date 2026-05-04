@@ -28,6 +28,11 @@ namespace ChessTutor.Models
         public List<Move> MoveHistory { get; } = new List<Move>();
         public int HalfMoveClock { get; private set; } // для правила 50 ходів
 
+        // Стек значень HalfMoveClock перед кожним ходом — для коректного Undo
+        private readonly Stack<int> _halfMoveClockStack = new Stack<int>();
+
+        public bool CanUndo => MoveHistory.Count > 0;
+
         // ─ Конструктор ─
 
         public GameState(Board board, MoveValidator validator)
@@ -48,6 +53,21 @@ namespace ChessTutor.Models
             Status = GameStatus.InProgress;
             HalfMoveClock = 0;
             MoveHistory.Clear();
+            _halfMoveClockStack.Clear();
+        }
+
+        /// <summary>
+        /// Починає партію з вже розставленої позиції на дошці (для редактора).
+        /// Викликати після того як Board вручну заповнено.
+        /// </summary>
+        public void StartFromCurrentBoard(PieceColor whoMovesFirst)
+        {
+            CurrentTurn = whoMovesFirst;
+            Status = GameStatus.InProgress;
+            HalfMoveClock = 0;
+            MoveHistory.Clear();
+            _halfMoveClockStack.Clear();
+            UpdateStatus();
         }
 
         // ─ Виконання ходу ─
@@ -59,18 +79,40 @@ namespace ChessTutor.Models
         /// <returns>true якщо хід виконано успішно.</returns>
         public bool TryMakeMove(Move move)
         {
+            // Зберігаємо попередній HalfMoveClock у стек для Undo
+            _halfMoveClockStack.Push(HalfMoveClock);
+
             // Лічильник 50 ходів
             bool isCapture = move.CapturedPiece != null;
             bool isPawn = move.MovingPiece.Type == PieceType.Pawn;
             HalfMoveClock = (isCapture || isPawn) ? 0 : HalfMoveClock + 1;
 
-            _board.ApplyMove(move, out _);
+            _board.ApplyMove(move);
             MoveHistory.Add(move);
 
             // Перемикаємо гравця і оновлюємо статус
             CurrentTurn = Opponent(CurrentTurn);
             UpdateStatus();
 
+            return true;
+        }
+
+        /// <summary>
+        /// Скасовує останній зроблений хід. Повертає true якщо вдалося.
+        /// </summary>
+        public bool UndoLastMove()
+        {
+            if (MoveHistory.Count == 0) return false;
+
+            int lastIdx = MoveHistory.Count - 1;
+            Move last = MoveHistory[lastIdx];
+            MoveHistory.RemoveAt(lastIdx);
+
+            _board.UndoMove(last);
+            CurrentTurn = Opponent(CurrentTurn);
+            HalfMoveClock = _halfMoveClockStack.Count > 0 ? _halfMoveClockStack.Pop() : 0;
+
+            UpdateStatus();
             return true;
         }
 

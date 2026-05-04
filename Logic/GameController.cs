@@ -31,6 +31,9 @@ namespace ChessTutor.Logic
         /// <summary>Виникає коли потрібно вибрати фігуру для перетворення пішака.</summary>
         public event Func<PieceType> PromotionRequested;
 
+        /// <summary>Виникає при будь-якій зміні дошки (Reset, Undo, нова партія).</summary>
+        public event Action BoardChanged;
+
 
         public GameController()
         {
@@ -154,6 +157,26 @@ namespace ChessTutor.Logic
             MoveMade?.Invoke(move);
             StatusChanged?.Invoke(State.Status);
             return true;
+        }
+
+        /// <summary>
+        /// Скасовує N останніх ходів. У режимі vs AI зазвичай 2 (хід AI + свій),
+        /// у режимі 2 гравців — 1.
+        /// </summary>
+        public bool UndoMoves(int count)
+        {
+            bool any = false;
+            for (int i = 0; i < count; i++)
+            {
+                if (!State.UndoLastMove()) break;
+                any = true;
+            }
+            if (any)
+            {
+                BoardChanged?.Invoke();
+                StatusChanged?.Invoke(State.Status);
+            }
+            return any;
         }
 
         /// <summary>

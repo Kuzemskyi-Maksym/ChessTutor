@@ -54,11 +54,11 @@ namespace ChessTutor.AI
 
             foreach (var move in moves)
             {
-                board.ApplyMove(move, out Position? prevEP);
+                board.ApplyMove(move);
 
                 int score = -Minimax(board, Depth - 1, -beta, -alpha, Opponent(Color));
 
-                board.UndoMove(move, prevEP);
+                board.UndoMove(move);
 
                 if (score > bestScore)
                 {
@@ -96,11 +96,11 @@ namespace ChessTutor.AI
             int best = int.MinValue;
             foreach (var move in moves)
             {
-                board.ApplyMove(move, out Position? prevEP);
+                board.ApplyMove(move);
 
                 int score = -Minimax(board, depth - 1, -beta, -alpha, Opponent(color));
 
-                board.UndoMove(move, prevEP);
+                board.UndoMove(move);
 
                 best = Math.Max(best, score);
                 alpha = Math.Max(alpha, score);
