@@ -211,19 +211,41 @@ namespace ChessTutor.Models
         // ─ Глибоке копіювання ─
 
         /// <summary>
-        /// Повертає копію дошки (для ШІ-перебору без зміни оригіналу).
-        /// Фігури спільні (не клоновані), бо UndoMove відновлює оригінальний стан.
+        /// Повертає ГЛИБОКУ копію дошки: і клітинна сітка, і всі фігури — нові об'єкти.
+        /// Це потрібно для ШІ, який працює у фоновому потоці на знімку дошки —
+        /// щоб UI міг безпечно малювати оригінальну позицію без race condition.
         /// </summary>
         public Board Clone()
         {
             var clone = new Board { EnPassantTarget = EnPassantTarget };
             for (int r = 0; r < 8; r++)
                 for (int c = 0; c < 8; c++)
-                    clone._grid[r, c] = _grid[r, c];
+                {
+                    Piece p = _grid[r, c];
+                    if (p == null) continue;
+                    Piece copy = ClonePiece(p);
+                    copy.HasMoved = p.HasMoved;
+                    clone._grid[r, c] = copy;
+                }
             return clone;
         }
 
-        // ─ Допоміжний метод ─
+        // ─ Допоміжні методи ─
+
+        /// <summary>Створює нову фігуру того ж типу та кольору (без копіювання HasMoved).</summary>
+        private static Piece ClonePiece(Piece p)
+        {
+            switch (p.Type)
+            {
+                case PieceType.King:   return new King(p.Color);
+                case PieceType.Queen:  return new Queen(p.Color);
+                case PieceType.Rook:   return new Rook(p.Color);
+                case PieceType.Bishop: return new Bishop(p.Color);
+                case PieceType.Knight: return new Knight(p.Color);
+                case PieceType.Pawn:   return new Pawn(p.Color);
+            }
+            throw new ArgumentException("Unknown piece type");
+        }
 
         private Piece CreatePromotedPiece(PieceType type, PieceColor color)
         {

@@ -1,0 +1,313 @@
+<mxfile host="app.diagrams.net" modified="2026-05-10T12:00:00.000Z" agent="generator" version="22.0.0">
+  <diagram id="ChessTutor" name="ChessTutor — UML class diagram">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════════════════════ MODELS — base ═══════════════════════════════ -->
+        <mxCell id="position" value="&lt;b&gt;Position&lt;/b&gt; «struct»&#10;━━━━━━━━━━━━━━&#10;+ Row : int&#10;+ Col : int&#10;━━━━━━━━━━━━━━&#10;+ Position(row, col)&#10;+ ToString() : string"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="piece" value="&lt;b&gt;«abstract» Piece&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Color : PieceColor&#10;+ Type : PieceType&#10;+ HasMoved : bool&#10;━━━━━━━━━━━━━━&#10;+ «abstract» GetPseudoLegalMoves(from, board) : List&lt;Move&gt;"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="280" height="160" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="move" value="&lt;b&gt;Move&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ From, To : Position&#10;+ Type : MoveType&#10;+ MovingPiece : Piece&#10;+ CapturedPiece : Piece&#10;+ PromotionPieceType : PieceType&#10;+ PrevEnPassantTarget : Position?&#10;+ PrevMovingPieceHasMoved : bool&#10;+ PrevRookHasMoved : bool&#10;━━━━━━━━━━━━━━&#10;+ ToString() : string"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="660" y="40" width="280" height="220" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ Pieces (concrete) ═══════════════════════════════ -->
+        <mxCell id="king" value="&lt;b&gt;King&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="queen" value="&lt;b&gt;Queen&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="260" y="240" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="rook" value="&lt;b&gt;Rook&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="480" y="240" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="bishop" value="&lt;b&gt;Bishop&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="knight" value="&lt;b&gt;Knight&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="260" y="340" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="pawn" value="&lt;b&gt;Pawn&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetPseudoLegalMoves(from, board)&#10;  (включно з EnPassant і Promotion)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="480" y="340" width="200" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ Board + GameState ═══════════════════════════════ -->
+        <mxCell id="board" value="&lt;b&gt;Board&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;- _grid : Piece[8,8]&#10;+ EnPassantTarget : Position?&#10;━━━━━━━━━━━━━━&#10;+ GetPiece(pos) : Piece&#10;+ SetPiece(pos, piece)&#10;+ ApplyMove(move)&#10;+ UndoMove(move)&#10;+ FindKing(color) : Position&#10;+ Clone() : Board (deep)&#10;+ SetupStandardPosition()&#10;+ Clear()"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="460" width="280" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gamestate" value="&lt;b&gt;GameState&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ CurrentTurn : PieceColor&#10;+ Status : GameStatus&#10;+ Mode : GameMode&#10;+ MoveHistory : List&lt;Move&gt;&#10;+ HalfMoveClock : int&#10;- _halfMoveClockStack : Stack&lt;int&gt;&#10;━━━━━━━━━━━━━━&#10;+ Reset()&#10;+ StartFromCurrentBoard(color)&#10;+ TryMakeMove(move) : bool&#10;+ UndoLastMove() : bool&#10;+ SaveToFile(path)&#10;+ SaveToPgn(path)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="360" y="460" width="300" height="280" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="enums" value="&lt;b&gt;«enum»&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;PieceColor: White, Black&#10;PieceType: King, Queen, Rook, Bishop, Knight, Pawn&#10;MoveType: Normal, CastlingKingside, CastlingQueenside, EnPassant, Promotion&#10;GameStatus: InProgress, Check, Checkmate, Stalemate, Draw&#10;GameMode: TwoPlayers, VsComputer"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f5f5f5;strokeColor=#666666;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=10;dashed=1;"
+          vertex="1" parent="1">
+          <mxGeometry x="700" y="280" width="320" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ Logic ═══════════════════════════════ -->
+        <mxCell id="validator" value="&lt;b&gt;MoveValidator&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ GetLegalMoves(from, board) : List&lt;Move&gt;&#10;+ GetAllLegalMoves(color, board) : List&lt;Move&gt;&#10;+ IsInCheck(color, board) : bool&#10;+ IsCheckmate(color, board) : bool&#10;+ IsStalemate(color, board) : bool&#10;+ IsSquareAttackedBy(pos, attacker, board)&#10;- WouldLeaveKingInCheck(move, board, color)&#10;- GetCastlingMoves(from, board, piece)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="700" y="780" width="340" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="controller" value="&lt;b&gt;GameController&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Board : Board&#10;+ State : GameState&#10;+ Validator : MoveValidator&#10;- _whitePlayer, _blackPlayer : IPlayer&#10;━━━ events ━━━&#10;+ MoveMade : Action&lt;Move&gt;&#10;+ StatusChanged : Action&lt;GameStatus&gt;&#10;+ BoardChanged : Action&#10;+ PromotionRequested : Func&lt;PieceType&gt;&#10;━━━━━━━━━━━━━━&#10;+ StartTwoPlayerGame()&#10;+ StartVsComputerGame(color, depth)&#10;+ StartFromCustomPosition(...)&#10;+ TryHumanMove(from, to) : bool&#10;+ ComputeAIMove() : Move&#10;+ ApplyComputedMove(move) : bool&#10;+ UndoMoves(count) : bool&#10;+ SaveGame(path) / SavePgn(path)&#10;+ IsCurrentPlayerAI() : bool"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1080" y="460" width="340" height="380" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pgn" value="&lt;b&gt;«static» PgnNotation&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ ToSan(move, board, validator) : string&#10;+ SerializeGame(state) : string&#10;+ ParseGame(text) : ParsedGame&#10;+ ParseSan(san, board, validator, color) : Move&#10;+ SaveGameToFile(state, path)&#10;+ ResultString(state) : string"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#fff2cc;strokeColor=#d6b656;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="700" y="1040" width="340" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ AI ═══════════════════════════════ -->
+        <mxCell id="iplayer" value="&lt;b&gt;«interface» IPlayer&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Color : PieceColor&#10;━━━━━━━━━━━━━━&#10;+ GetMove(board, validator) : Move"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="40" width="240" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="human" value="&lt;b&gt;HumanPlayer&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Color : PieceColor&#10;━━━━━━━━━━━━━━&#10;+ GetMove(board, validator) : Move&#10;  (повертає null — хід через UI)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="200" width="240" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ai" value="&lt;b&gt;AIPlayer&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Color : PieceColor&#10;+ Depth : int (1..5)&#10;- _validator : MoveValidator&#10;━━━━━━━━━━━━━━&#10;+ GetMove(board, validator) : Move&#10;- Minimax(board, depth, α, β, color) : int&#10;- Evaluate(board, color) : int"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="360" width="240" height="180" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ Forms ═══════════════════════════════ -->
+        <mxCell id="renderer" value="&lt;b&gt;«static» BoardRenderer&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ Draw(g, board, area, flipped, cellSize)&#10;+ DrawPiece(g, piece, px, py, cellSize)&#10;+ PixelToPosition(x, y, area, flipped, cs)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;fontStyle=2;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="600" width="280" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dbpanel" value="&lt;b&gt;DoubleBufferedPanelShared&lt;/b&gt; «WinForms»&#10;━━━━━━━━━━━━━━&#10;Panel з увімкненим OptimizedDoubleBuffer&#10;+ AllPaintingInWmPaint, UserPaint"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=10;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="780" width="280" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mainform" value="&lt;b&gt;MainForm : Form&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;- _controller : GameController&#10;- _boardPanel : DoubleBufferedPanel&#10;- _moveList, _statusLabel, _hintLabel&#10;- _capturedWhiteLabel, _capturedBlackLabel&#10;- _materialLabel&#10;- _toolbar : ToolStrip&#10;- _aiThinking : bool&#10;━━━━━━━━━━━━━━&#10;+ MainForm()&#10;- BuildUI()&#10;- OnBoardPaint(...)&#10;- OnBoardClick(...)&#10;- OnMoveMade(move) / OnStatusChanged(s)&#10;- OnBoardChanged() / OnPromotionRequested()&#10;- TriggerAIMove() (ThreadPool)&#10;- UpdateCapturedPanel()&#10;- DoUndo() / OpenEditor() / OnSavePgn(...)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1080" y="900" width="340" height="360" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="editorform" value="&lt;b&gt;EditorForm : Form&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ EditedBoard : Board&#10;+ WhoMovesFirst : PieceColor&#10;- _selectedTool : (PieceType, PieceColor)?&#10;- _eraseTool : bool&#10;━━━━━━━━━━━━━━&#10;+ EditorForm(startFrom)&#10;- BuildUI() / BuildPalette()&#10;- OnBoardClick(...)&#10;- OnStartClick(...)&#10;- ValidatePosition() : string"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="900" width="280" height="240" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="replayform" value="&lt;b&gt;ReplayForm : Form&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;- _board : Board&#10;- _validator : MoveValidator&#10;- _moves : List&lt;Move&gt;&#10;- _currentPly : int&#10;━━━━━━━━━━━━━━&#10;+ ReplayForm(pgnText)&#10;- LoadPgn(text)&#10;- GoTo(ply)&#10;- OnKeyDownNav(...)&#10;+ static OpenFromFile(owner)"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1480" y="1180" width="280" height="240" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="promodlg" value="&lt;b&gt;PromotionDialog : Form&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ SelectedPiece : PieceType&#10;━━━━━━━━━━━━━━&#10;+ PromotionDialog(color)&#10;- BuildUI()"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="1080" y="1300" width="280" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="program" value="&lt;b&gt;Program&lt;/b&gt;&#10;━━━━━━━━━━━━━━&#10;+ static Main() — точка входу"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#f8cecc;strokeColor=#b85450;spacingLeft=6;spacingRight=6;spacingTop=4;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="660" y="1300" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ INHERITANCE: Piece <|-- {6 fig} ═══════════════════════════════ -->
+        <mxCell id="e_king" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="king" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_queen" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="queen" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_rook" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="rook" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_bishop" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;" edge="1" parent="1" source="bishop" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_knight" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;" edge="1" parent="1" source="knight" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_pawn" style="endArrow=block;endFill=0;endSize=14;html=1;rounded=0;" edge="1" parent="1" source="pawn" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ INTERFACE realization: IPlayer <|.. Human/AI ═══════════════════════════════ -->
+        <mxCell id="e_human" style="endArrow=block;endFill=0;endSize=14;dashed=1;html=1;rounded=0;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="human" target="iplayer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_ai" style="endArrow=block;endFill=0;endSize=14;dashed=1;html=1;rounded=0;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="ai" target="iplayer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ COMPOSITION / AGGREGATION ═══════════════════════════════ -->
+        <!-- Board *-- Piece (зберігає масив фігур) -->
+        <mxCell id="e_b_p" value="*  _grid[8,8]" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.2;entryX=0;entryY=1;" edge="1" parent="1" source="board" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Move o-- Piece (Moving + Captured) -->
+        <mxCell id="e_m_p" value="2  Moving / Captured" style="endArrow=open;startArrow=diamondThin;startFill=0;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="move" target="piece">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- GameState *-- Board, MoveValidator, MoveHistory -->
+        <mxCell id="e_gs_b" value="1" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="gamestate" target="board">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_gs_v" value="1" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.2;" edge="1" parent="1" source="gamestate" target="validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_gs_m" value="*  MoveHistory" style="endArrow=open;startArrow=diamondThin;startFill=0;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.1;entryX=0;entryY=0.5;" edge="1" parent="1" source="gamestate" target="move">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- GameController -->
+        <mxCell id="e_c_b" value="1  Board" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.3;entryX=1;entryY=0.4;" edge="1" parent="1" source="controller" target="board">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_c_gs" value="1  State" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.4;entryX=1;entryY=0.4;" edge="1" parent="1" source="controller" target="gamestate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_c_v" value="1  Validator" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.7;entryX=1;entryY=0.4;" edge="1" parent="1" source="controller" target="validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_c_pl" value="2  white/black" style="endArrow=open;startArrow=diamondThin;startFill=0;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.3;entryX=0;entryY=0.5;" edge="1" parent="1" source="controller" target="iplayer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- MainForm composes GameController -->
+        <mxCell id="e_mf_c" value="1  _controller" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="mainform" target="controller">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- EditorForm composes Board -->
+        <mxCell id="e_ef_b" value="1  EditedBoard" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;entryX=1;entryY=0.7;" edge="1" parent="1" source="editorform" target="board">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ReplayForm composes Board + Validator -->
+        <mxCell id="e_rf_b" value="1  _board" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="replayform" target="board">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_rf_v" value="1  _validator" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="replayform" target="validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- AIPlayer uses MoveValidator (composition) -->
+        <mxCell id="e_ai_v" value="1" style="endArrow=open;startArrow=diamondThin;startFill=1;startSize=10;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;entryX=1;entryY=0.1;" edge="1" parent="1" source="ai" target="validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ DEPENDENCIES (dashed) ═══════════════════════════════ -->
+        <!-- PgnNotation ..> GameState, MoveValidator -->
+        <mxCell id="d_pgn_gs" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;entryX=0.5;entryY=1;" edge="1" parent="1" source="pgn" target="gamestate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_pgn_v" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="pgn" target="validator">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- GameController ..> PgnNotation -->
+        <mxCell id="d_c_pgn" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="controller" target="pgn">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Forms ..> BoardRenderer -->
+        <mxCell id="d_mf_r" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="mainform" target="renderer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_ef_r" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="editorform" target="renderer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_rf_r" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="replayform" target="renderer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Forms ..> DoubleBufferedPanelShared -->
+        <mxCell id="d_mf_db" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="mainform" target="dbpanel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_ef_db" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="editorform" target="dbpanel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_rf_db" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="replayform" target="dbpanel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- MainForm ..> PromotionDialog -->
+        <mxCell id="d_mf_pd" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="mainform" target="promodlg">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- MainForm ..> EditorForm, ReplayForm -->
+        <mxCell id="d_mf_ef" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="mainform" target="editorform">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="d_mf_rf" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="mainform" target="replayform">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Program ..> MainForm -->
+        <mxCell id="d_pr_mf" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="program" target="mainform">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Move ..> Position -->
+        <mxCell id="d_m_pos" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="move" target="position">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Board ..> Position -->
+        <mxCell id="d_b_pos" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="board" target="position">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <!-- Validator ..> Move (генерує) -->
+        <mxCell id="d_v_m" style="endArrow=open;dashed=1;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="validator" target="move">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ═══════════════════════════════ LEGEND ═══════════════════════════════ -->
+        <mxCell id="legend_box" value="&lt;b&gt;Легенда&lt;/b&gt;&#10;&#10;Models  (Position, Piece*, Move, Board, GameState)&#10;Logic  (MoveValidator, GameController, PgnNotation)&#10;AI  (IPlayer, HumanPlayer, AIPlayer)&#10;Forms  (MainForm, EditorForm, ReplayForm, …)&#10;«enum» — перелічення&#10;&#10;━── (порожній трикутник)  спадковість&#10;┄ ┄►  (порожній трикутник, пунктир)  реалізація інтерфейсу&#10;◆──►  (заповнений ромб)  композиція (вкладений володіє)&#10;◇──►  (порожній ромб)  агрегація&#10;┄ ┄►  (пунктирна стрілка)  залежність / використання"
+          style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffffff;strokeColor=#999999;spacingLeft=8;spacingRight=8;spacingTop=6;fontSize=11;"
+          vertex="1" parent="1">
+          <mxGeometry x="40" y="780" width="600" height="240" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

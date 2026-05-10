@@ -172,6 +172,10 @@ namespace ChessTutor.Models
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
         }
 
+        /// <summary>Зберігає партію у форматі PGN (стандартна шахова нотація).</summary>
+        public void SaveToPgn(string path)
+            => PgnNotation.SaveGameToFile(this, path);
+
         // ─ Допоміжні ─
 
         private string StatusToUkrainian()

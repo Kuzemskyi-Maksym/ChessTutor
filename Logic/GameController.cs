@@ -137,15 +137,61 @@ namespace ChessTutor.Logic
         }
 
         /// <summary>
-        /// Обчислює та виконує хід AI для поточного гравця.
-        /// Цей метод НЕ запускає потік сам — викликати з фонового потоку.
-        /// Не викликає подію MoveMade, бо UI робить це сам після Invoke.
+        /// Обчислює хід AI для поточного гравця.
+        /// Цей метод викликається з фонового потоку — щоб не блокувати UI.
+        /// AI працює на ГЛИБОКОМУ КЛОНІ дошки, тому UI може безпечно
+        /// перемальовувати оригінальну дошку без race condition.
+        /// Повернутий Move має посилання на ФІГУРИ ОРИГІНАЛЬНОЇ дошки —
+        /// готовий до ApplyComputedMove.
         /// </summary>
         public Move ComputeAIMove()
         {
             IPlayer ai = State.CurrentTurn == PieceColor.White ? _whitePlayer : _blackPlayer;
             if (!(ai is AIPlayer)) return null;
-            return ai.GetMove(Board, Validator);
+
+            // 1. Робимо глибокий знімок дошки. Окремий валідатор —
+            //    бо MoveValidator не зберігає стану, але про всяк випадок ізолюємо.
+            Board snapshot = Board.Clone();
+            var snapshotValidator = new MoveValidator();
+
+            // 2. AI шукає на знімку. Усі ApplyMove/UndoMove відбуваються на копії —
+            //    основна Board не торкається.
+            Move aiMove = ai.GetMove(snapshot, snapshotValidator);
+            if (aiMove == null) return null;
+
+            // 3. Перетворюємо хід на еквівалентний з фігурами ОРИГІНАЛЬНОЇ дошки.
+            //    Це важливо, бо інакше Board.UndoMove поверне на оригінальну
+            //    дошку клоновану фігуру (різний об'єкт від тих, що там стояли).
+            return ConvertSnapshotMoveToOriginal(aiMove);
+        }
+
+        /// <summary>
+        /// Перетворює Move зі знімка дошки на Move з фігурами оригінальної дошки.
+        /// </summary>
+        private Move ConvertSnapshotMoveToOriginal(Move snapshotMove)
+        {
+            Piece origMover = Board.GetPiece(snapshotMove.From);
+            if (origMover == null) return null; // несподівано, але без падіння
+
+            var realMove = new Move(origMover, snapshotMove.From, snapshotMove.To)
+            {
+                Type = snapshotMove.Type,
+                PromotionPieceType = snapshotMove.PromotionPieceType
+            };
+
+            // CapturedPiece залежить від типу ходу
+            if (snapshotMove.Type == MoveType.EnPassant)
+            {
+                var epCap = new Position(snapshotMove.From.Row, snapshotMove.To.Col);
+                realMove.CapturedPiece = Board.GetPiece(epCap);
+            }
+            else if (snapshotMove.Type != MoveType.CastlingKingside &&
+                     snapshotMove.Type != MoveType.CastlingQueenside)
+            {
+                realMove.CapturedPiece = Board.GetPiece(snapshotMove.To);
+            }
+
+            return realMove;
         }
 
         /// <summary>Виконує хід (як гравець, так і AI), кидає події UI.</summary>
@@ -186,8 +232,38 @@ namespace ChessTutor.Logic
             Validator.GetLegalMoves(pos, Board);
 
 
-        /// <summary>Зберігає результат партії у файл.</summary>
+        /// <summary>Зберігає результат партії у текстовий файл.</summary>
         public void SaveGame(string path) => State.SaveToFile(path);
+
+        /// <summary>Зберігає партію у форматі PGN.</summary>
+        public void SavePgn(string path) => State.SaveToPgn(path);
+
+        /// <summary>
+        /// Починає партію з довільно розставленої позиції (з редактора).
+        /// Дошка має бути заповнена ззовні (через Board.SetPiece).
+        /// </summary>
+        public void StartFromCustomPosition(PieceColor whoMovesFirst, GameMode mode,
+            PieceColor humanColor = PieceColor.White, int aiDepth = 3)
+        {
+            State.Mode = mode;
+            if (mode == GameMode.TwoPlayers)
+            {
+                _whitePlayer = new HumanPlayer(PieceColor.White);
+                _blackPlayer = new HumanPlayer(PieceColor.Black);
+            }
+            else
+            {
+                _whitePlayer = humanColor == PieceColor.White
+                    ? (IPlayer)new HumanPlayer(PieceColor.White)
+                    : new AIPlayer(PieceColor.White, aiDepth);
+                _blackPlayer = humanColor == PieceColor.Black
+                    ? (IPlayer)new HumanPlayer(PieceColor.Black)
+                    : new AIPlayer(PieceColor.Black, aiDepth);
+            }
+            State.StartFromCurrentBoard(whoMovesFirst);
+            BoardChanged?.Invoke();
+            StatusChanged?.Invoke(State.Status);
+        }
 
         /// <summary>Чи є поточна позиція під шахом для поточного гравця?</summary>
         public bool IsCurrentPlayerInCheck() =>

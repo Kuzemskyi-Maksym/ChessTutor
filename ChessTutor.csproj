@@ -52,14 +52,22 @@
     <Compile Include="AI\AIPlayer.cs" />
     <Compile Include="AI\HumanPlayer.cs" />
     <Compile Include="AI\IPlayer.cs" />
+    <Compile Include="Forms\BoardRenderer.cs" />
+    <Compile Include="Forms\EditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\PromotionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\ReplayForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Logic\GameController.cs" />
     <Compile Include="Logic\MoveValidator.cs" />
+    <Compile Include="Logic\PgnNotation.cs" />
     <Compile Include="Models\Board.cs" />
     <Compile Include="Models\GameState.cs" />
     <Compile Include="Models\Move.cs" />

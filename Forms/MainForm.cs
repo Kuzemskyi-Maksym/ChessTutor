@@ -157,8 +157,11 @@ namespace ChessTutor.Forms
             gameMenu.DropDownItems.Add(depthMenu);
             gameMenu.DropDownItems.Add(new ToolStripSeparator());
             gameMenu.DropDownItems.Add("Скасувати хід (Ctrl+Z)", null, (s, e) => DoUndo());
+            gameMenu.DropDownItems.Add("Редактор позиції...", null, (s, e) => OpenEditor());
             gameMenu.DropDownItems.Add(new ToolStripSeparator());
-            gameMenu.DropDownItems.Add("Зберегти результат...", null, OnSaveGame);
+            gameMenu.DropDownItems.Add("Зберегти результат (текст)...", null, OnSaveGame);
+            gameMenu.DropDownItems.Add("Зберегти партію (PGN)...", null, OnSavePgn);
+            gameMenu.DropDownItems.Add("Переглянути партію (PGN)...", null, (s, e) => ReplayForm.OpenFromFile(this));
             gameMenu.DropDownItems.Add(new ToolStripSeparator());
             gameMenu.DropDownItems.Add("Вийти", null, (s, e) => Application.Exit());
 
@@ -186,7 +189,10 @@ namespace ChessTutor.Forms
             _toolbar.Items.Add(MakeToolButton("↶ Назад",  "Скасувати хід (Ctrl+Z)", (s, e) => DoUndo()));
             _toolbar.Items.Add(MakeToolButton("⇅ Перевернути", "Перевернути дошку", (s, e) => { _flipped = !_flipped; _boardPanel.Invalidate(); }));
             _toolbar.Items.Add(new ToolStripSeparator());
-            _toolbar.Items.Add(MakeToolButton("💾 Зберегти", "Зберегти результат у файл", OnSaveGame));
+            _toolbar.Items.Add(MakeToolButton("✎ Редактор", "Редактор позиції", (s, e) => OpenEditor()));
+            _toolbar.Items.Add(MakeToolButton("💾 Текст", "Зберегти результат у текст", OnSaveGame));
+            _toolbar.Items.Add(MakeToolButton("📄 PGN", "Зберегти партію у PGN-форматі", OnSavePgn));
+            _toolbar.Items.Add(MakeToolButton("📖 Переглянути", "Переглянути збережену партію", (s, e) => ReplayForm.OpenFromFile(this)));
             Controls.Add(_toolbar);
 
             int topOffset = _menu.Height + _toolbar.Height;
@@ -891,6 +897,62 @@ namespace ChessTutor.Forms
                     MessageBox.Show("Результат збережено!", "Збереження",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+            }
+        }
+
+        private void OnSavePgn(object sender, EventArgs e)
+        {
+            if (_controller.State.MoveHistory.Count == 0)
+            {
+                ShowHint("Немає ходів для збереження");
+                return;
+            }
+            using (var dlg = new SaveFileDialog
+            {
+                Filter = "PGN партія (*.pgn)|*.pgn|Усі файли (*.*)|*.*",
+                FileName = $"chess_{DateTime.Now:yyyyMMdd_HHmm}.pgn"
+            })
+            {
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        _controller.SavePgn(dlg.FileName);
+                        MessageBox.Show("Партію збережено у форматі PGN!", "Збереження",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Помилка збереження PGN: " + ex.Message, "Помилка",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Відкриває редактор позиції. При успішному завершенні копіює стан
+        /// з редактора у головну дошку та починає партію в режимі 2 гравців.
+        /// </summary>
+        private void OpenEditor()
+        {
+            if (_aiThinking) { ShowHint("ШІ зараз думає, зачекайте"); return; }
+
+            using (var dlg = new EditorForm(_controller.Board))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                // Копіюємо стан із редактора у головну дошку
+                _controller.Board.Clear();
+                for (int r = 0; r < 8; r++)
+                    for (int c = 0; c < 8; c++)
+                    {
+                        var p = dlg.EditedBoard.GetPiece(new Position(r, c));
+                        if (p != null) _controller.Board.SetPiece(new Position(r, c), p);
+                    }
+                // Запускаємо нову партію 2 гравці з цієї позиції
+                _controller.StartFromCustomPosition(dlg.WhoMovesFirst, GameMode.TwoPlayers);
+                ResetUIState();
             }
         }
 
